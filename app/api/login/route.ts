@@ -28,7 +28,7 @@ export async function POST(request: Request) {
 
     const { email, password } = result.data;
 
-    // Find user
+    
     const user = await User.findOne({ email });
 
     if (!user) {
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Check password
+    
     const isPasswordCorrect = await bcrypt.compare(
       password,
       user.password
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Create JWT token
+    
     const token = jwt.sign(
       {
         userId: user._id.toString(),
@@ -69,11 +69,11 @@ export async function POST(request: Request) {
       },
       process.env.JWT_SECRET!,
       {
-        expiresIn: "7d",
+        expiresIn: "1d",
       }
     );
 
-    // Success response
+
     return Response.json(
       {
         success: true,
