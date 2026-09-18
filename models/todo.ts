@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document } from "mongoose";
 
-  mongoose.connect('mongodb://localhost:27017/todo')
+  mongoose.connect('')
           
 interface ITODO{
      title:string,

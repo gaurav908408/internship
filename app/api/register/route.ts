@@ -1,83 +1,67 @@
-import User from "@/models/userModel"
+import { connectDB } from "@/lib/db";
+import User from "@/models/userModel";
+import { registerSchema } from "@/validation/userValidation";
+import bcrypt from 'bcryptjs';
 
 export async function POST(request: Request) {
   try {
-    
-    const contentType = request.headers.get("content-type");
+    await connectDB();
 
-    if (!contentType?.includes("application/json")) {
-      return Response.json(
-        {
-          success: false,
-          message: "Content-Type must be application/json",
-        },
-        { status: 400 }
-      );
-    }
+    const body = await request.json();
 
     
-    let data;
+    const result = registerSchema.safeParse(body);
 
-    try {
-      data = await request.json();
-    } catch {
+    if (!result.success) {
       return Response.json(
         {
           success: false,
-          message: "Invalid JSON body",
+          message: "Validation failed",
+          errors: result.error.flatten().fieldErrors,
         },
         { status: 400 }
+      );
+    }
+
+    const { name, email, password } = result.data;
+
+    
+    const existingUser = await User.findOne({ email });
+
+    if (existingUser) {
+      return Response.json(
+        {
+          success: false,
+          message: "User already exists",
+        },
+        { status: 409 }
       );
     }
 
     
-    if (
-      typeof data.name !== "string" ||
-      typeof data.email !== "string" ||
-      typeof data.password !== "string"
-    ) {
-      return Response.json(
-        {
-          success: false,
-          message: "Name, email and password are  strings",
-        },
-        { status: 400 }
-      );
-    }
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-
-    const name = data.name.trim();
-    const email = data.email.trim();
-    const password = data.password.trim();
-
-
-    if (!name || !email || !password) {
-      return Response.json(
-        {
-          success: false,
-          message: "Name, email and password are required",
-        },
-        { status: 400 }
-      );
-    }
-
-
-     const user = await User.create({
+    
+    const user = await User.create({
       name,
       email,
-    password
-     });
+      password: hashedPassword,
+    });
 
     return Response.json(
       {
         success: true,
         message: "User registered successfully",
+        data: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+        },
       },
       { status: 201 }
     );
-
   } catch (error) {
-    console.error(error);
+    console.error("Register error:", error);
 
     return Response.json(
       {
