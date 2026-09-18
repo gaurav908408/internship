@@ -1,7 +1,6 @@
 import mongoose, { Schema, Document } from "mongoose";
 
-  mongoose.connect('')
-          
+
 interface ITODO{
      title:string,
      description:string

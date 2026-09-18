@@ -7,9 +7,12 @@ import jwt from "jsonwebtoken";
 
 export async function POST(request: Request) {
   try {
+    
     await connectDB();
 
+    
     const body = await request.json();
+
 
     const result = loginSchema.safeParse(body);
 
@@ -28,7 +31,6 @@ export async function POST(request: Request) {
 
     const { email, password } = result.data;
 
-    
     const user = await User.findOne({ email });
 
     if (!user) {
@@ -43,7 +45,7 @@ export async function POST(request: Request) {
       );
     }
 
-    
+
     const isPasswordCorrect = await bcrypt.compare(
       password,
       user.password
@@ -62,23 +64,55 @@ export async function POST(request: Request) {
     }
 
     
-    const token = jwt.sign(
+    const JWT_SECRET = process.env.JWT_SECRET;
+    const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
+
+    if (!JWT_SECRET || !JWT_REFRESH_SECRET) {
+      console.error("JWT secrets are missing");
+
+      return Response.json(
+        {
+          success: false,
+          message: "JWT configuration is missing",
+        },
+        {
+          status: StatusCodes.INTERNAL_SERVER_ERROR,
+        }
+      );
+    }
+
+    
+    const accessToken = jwt.sign(
       {
         userId: user._id.toString(),
         email: user.email,
       },
-      process.env.JWT_SECRET!,
+      JWT_SECRET,
       {
-        expiresIn: "1d",
+        expiresIn: "15m",
       }
     );
 
+    
+    const refreshToken = jwt.sign(
+      {
+        userId: user._id.toString(),
+      },
+      JWT_REFRESH_SECRET,
+      {
+        expiresIn: "5d",
+      }
+    );
 
+    
     return Response.json(
       {
         success: true,
         message: "Login successful",
-        token: token,
+
+        accessToken,
+        refreshToken,
+
         data: {
           id: user._id,
           name: user.name,

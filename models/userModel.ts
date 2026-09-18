@@ -1,7 +1,5 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
-  mongoose.connect('')
-
 export interface IUser extends Document {
   name: string;
   email: string;
